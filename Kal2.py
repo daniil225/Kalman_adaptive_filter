@@ -1,25 +1,34 @@
 import numpy as np
+import time
 
 def f(t):
     return t
 
 # Задаём параметры задачи
-n_steps = 10000  # Количество шагов
+n_steps = 1000  # Количество шагов
 t = np.linspace(0, 10, n_steps)
 true_position = np.array([f(ti) for ti in t])  # Истинное положение объекта
 measurement_noise_std = 1.1  # Стандартное отклонение шума измерений
 process_noise_std = 0.5  # Стандартное отклонение шума системы
 
 # Генерируем данные
-np.random.seed(101)
-measurements = true_position + np.random.normal(0, measurement_noise_std, size=n_steps)
+np.random.seed(100)
+
+n_steps1 = int(n_steps/2)
+n_steps2 = n_steps - n_steps1
+
+noise1 = np.random.normal(0, measurement_noise_std, size=n_steps1)
+noise2 = np.random.normal(0, measurement_noise_std + 1.0, size=n_steps2)
+noise = np.concatenate([noise1, noise2])
+
+measurements = true_position + noise
 
 # Инициализация
 x_hat = np.zeros(n_steps)  # Оценка состояния
 x_hat[0] = measurements[0]  # Начальная оценка
 P = 1.0  # Начальная ковариация оценки
-Q_k = 0  # Инициализация Q_k (ковариация шума системы)
-R_k = 1.0  # Инициализация R_k (ковариация шума измерений)
+Q_k = 1000  # Инициализация Q_k (ковариация шума системы)
+R_k = 1000.0  # Инициализация R_k (ковариация шума измерений)
 Phi = 1.0  # Модель динамики
 H = 1.0  # Модель измерений
 alpha = 0.05
