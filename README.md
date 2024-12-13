@@ -3,5 +3,7 @@
 
 # Ресурсы про Калмана 
 
-[Фильтр калмана простыми словами](https://mp-lab.ru/filtr_kalmana_dlya_nachinayushchih/)
-
+- [Фильтр калмана простыми словами](https://mp-lab.ru/filtr_kalmana_dlya_nachinayushchih/)
+- [Статья с примерами реализации фильтра Калмана. Так же есть пример симуляции измерений](https://habr.com/ru/companies/singularis/articles/516798/)
+- [Обяснение Фильтра Калмана в Картинках. Пояснена сама суть фильтра](https://habr.com/ru/articles/594249/)
+- [Статья с мат. описание AEKF](Литература/AEKF.pdf)
