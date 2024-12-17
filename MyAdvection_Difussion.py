@@ -4,11 +4,6 @@ from matplotlib.animation import FuncAnimation
 
 
 def Simulation(x_start, x_end, T_start, T_end, nx, nt, D, v, noiseSigma = 0.0):
-
-
-    # Parameters
-
-
     # Derived parameters
     dx = (x_end - x_start) / nx
     dt = (T_end - T_start) / nt
@@ -90,31 +85,32 @@ def AnimateDraw(x, x_end,dt,measurments):
 
 
 x_start, x_end = 0, 10  # Spatial domain
-T_start, T_end = 0, 15  # Time domain
+T_start, T_end = 0, 20  # Time domain
 D = 0.1  # Diffusion coefficient
 v = 0.1   # Velocity
 nx = 200   # Number of spatial points
 nt = 300   # Number of time steps
 noiseSigma = 0.05
 measurments, x, dt, F, C_init = Simulation(x_start, x_end, T_start, T_end, nx, nt, D, v, noiseSigma)
+prediction_x, x, dt, F, C_init = Simulation(x_start, x_end, T_start, T_end, nx, nt, D, v, 0.0)
 
 
 H = np.eye(nx + 1)  # Observation matrix (identity)
-Q = 0.001 * np.eye(nx + 1)  # Process noise covariance
-R = 0.05 * np.eye(nx + 1)  # Measurement noise covariance
+Q = 0.1 * np.eye(nx + 1)  # Process noise covariance
+R = 0.1 * np.eye(nx + 1)  # Measurement noise covariance
 P = 0.001*np.eye(nx + 1)  # Initial error covariance
 
 filter_state = np.zeros((nt, len(measurments[0])))
-
+adaptive_QR = False
 
 alpha = 0.96
-x_k = C_init
 
 for i in range(0, len(measurments)-1):
-    z = measurments[i]
+    z = measurments[i] 
 
     #predict
-    x_k = F @ x_k
+    x_k = prediction_x[i] #F @ x_k
+    
     P = F @ P @ F.T + Q
 
     y = z - H @ x_k
@@ -125,9 +121,20 @@ for i in range(0, len(measurments)-1):
 
     K = PHT @ SI
     x_k = x_k + K @ y
+    
+    if adaptive_QR:
+        eps = z - H @ x_k
+        R = alpha*R + (1-alpha)*(eps*eps.T + H @ P @ H.T)
 
     I_KH = np.eye(nx + 1) - K @ H
     P = I_KH @ P @ I_KH.T + K @ R @ K.T
+    
+    if adaptive_QR:
+        TMP = y * y.T
+        Q_prev = Q.copy()
+        Q = (1-alpha)*Q + (alpha)*(K @ TMP @ K.T)
+        if Q.max() > 1e-7:
+            Q = Q_prev
 
     filter_state[i] = x_k
 
