@@ -62,7 +62,7 @@ def Simulation(x_start, x_end, T_start, T_end, nx, nt, D, v, noiseSigma = 0.0):
     return measurments, x, dt, np.linalg.inv(A) @ B, C_init
 
 
-def AnimateDraw(x, x_end,dt,measurments):
+def AnimateDraw(x, x_end,dt,measurments, gif_filename = "animation.gif"):
     # Анимация
     fig, ax = plt.subplots()
     line, = ax.plot(x, measurments[0], label="Численное решение")
@@ -80,6 +80,9 @@ def AnimateDraw(x, x_end,dt,measurments):
         return line,
 
     ani = FuncAnimation(fig, update, frames=len(measurments), interval=50)
+    # Сохранение анимации в GIF
+    ani.save(gif_filename, writer='pillow', fps=20)  # Можно также использовать writer='pillow'
+
     plt.show()
 
 
