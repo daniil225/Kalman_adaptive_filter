@@ -86,11 +86,23 @@ def AnimateDraw(x, x_end,dt,measurments, gif_filename = "animation.gif"):
     plt.show()
 
 
+def DrawSlice(data, idx):
+    current_time = idx * dt
+    fig, ax = plt.subplots()
+    line, = ax.plot(x, data[idx], label="Численное решение")
+    ax.set_xlim(0, x_end)
+    ax.set_ylim(0, 1.1*data.max())
+    ax.set_xlabel("x")
+    ax.set_ylabel("u(x, t)")
+    ax.set_title(f"Concentration at t = {current_time:.2f}")
+    ax.legend()
+    ax.grid()
+    plt.show()
 
 x_start, x_end = 0, 10  # Spatial domain
 T_start, T_end = 0, 20  # Time domain
-D = 0.01  # Diffusion coefficient
-v = 0.1   # Velocity
+D = 0.1  # Diffusion coefficient
+v = 0.5   # Velocity
 nx = 200   # Number of spatial points
 nt = 300   # Number of time steps
 noiseSigma = 0.05
@@ -99,8 +111,8 @@ prediction_x, x, dt, F, C_init = Simulation(x_start, x_end, T_start, T_end, nx, 
 
 
 H = np.eye(nx + 1)  # Observation matrix (identity)
-Q = 0.001 * np.eye(nx + 1)  # Process noise covariance
-R = 0.05 * np.eye(nx + 1)  # Measurement noise covariance
+Q = 100 * np.eye(nx + 1)  # Process noise covariance
+R = 3.05 * np.eye(nx + 1)  # Measurement noise covariance
 P = 0.001*np.eye(nx + 1)  # Initial error covariance
 
 filter_state = np.zeros((nt, len(measurments[0])))
@@ -142,8 +154,14 @@ for i in range(0, len(measurments)-1):
     filter_state[i] = x_k
 
 
+idx = 150
+DrawSlice(measurments, idx)
+DrawSlice(filter_state, idx)
+
 #AnimateDraw(x, x_end, dt, measurments)
-AnimateDraw(x, x_end, dt, filter_state)
+#AnimateDraw(x, x_end, dt, filter_state)
+
+
 
 # for el in np.linalg.inv(A):
 #     for e in el:
