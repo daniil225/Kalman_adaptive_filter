@@ -59,7 +59,7 @@ def Simulation(x_start, x_end, T_start, T_end, nx, nt, D, v, noiseSigma = 0.0):
         solution.append(C.copy() + noise)
 
     measurments = np.array(solution)
-    return measurments, x, dt, np.linalg.inv(A) @ B, C_init
+    return measurments, x, t, dt, dx ,np.linalg.inv(A) @ B, C_init
 
 
 def AnimateDraw(x, x_end,dt,measurments, gif_filename = "animation.gif"):
@@ -86,7 +86,7 @@ def AnimateDraw(x, x_end,dt,measurments, gif_filename = "animation.gif"):
     plt.show()
 
 
-def DrawSlice(data, idx):
+def DrawSlice(data, idx, dt):
     current_time = idx * dt
     fig, ax = plt.subplots()
     line, = ax.plot(x, data[idx], label="Численное решение")
@@ -99,26 +99,71 @@ def DrawSlice(data, idx):
     ax.grid()
     plt.show()
 
+
+def DrawXSlice(data, idx, dx, t):
+    current_x = idx * dx
+    plot_d = [d[idx] for d in data]
+
+    fig, ax = plt.subplots()
+    line, = ax.plot(t[0:nt], plot_d, label="Численное решение")
+    ax.set_xlim(0, T_end)
+    ax.set_ylim(0, 1.1*data.max())
+    ax.set_xlabel("t")
+    ax.set_ylabel("u(x, t)")
+    ax.set_title(f"Concentration at x = {current_x:.2f}")
+    ax.legend()
+    ax.grid()
+    plt.show()
+
+
+def DrawError(data_true, data_measurments,data_filtre):
+    data_true = data_true[0:nt]
+    data_measurments = data_measurments[0:nt]
+    data_filtre = data_filtre[0:nt]
+
+    error_filter = []
+    error_mesare = []
+    for i in range(1, nt):
+        error_filter.append(100*np.linalg.norm(data_true[i] - data_filtre[i])/np.linalg.norm(data_filtre[i]))
+        error_mesare.append(100*np.linalg.norm(data_true[i] - data_measurments[i])/np.linalg.norm(data_measurments[i]))
+
+    error_filter = np.array(error_filter)
+    error_mesare = np.array(error_mesare)
+    m = np.max([error_filter.max(), error_mesare.max()])
+
+    fig, ax = plt.subplots()
+    line, = ax.plot(t[1:nt], error_filter, label="Ошибка после фильтрации")
+    line, = ax.plot(t[1:nt], error_mesare, label="Ошибка чистых измерений")
+    ax.set_xlim(0, T_end)
+    ax.set_ylim(0, 1.1*m)
+    ax.set_xlabel("t")
+    ax.set_ylabel("Ошибка %")
+    ax.set_title(f"Ошибка в измерения до/после фильтрации")
+    ax.legend()
+    ax.grid()
+    plt.show()
+
+
 x_start, x_end = 0, 10  # Spatial domain
 T_start, T_end = 0, 20  # Time domain
-D = 0.01  # Diffusion coefficient
-v = 0.5   # Velocity
+D = 0.1  # Diffusion coefficient
+v = -0.1   # Velocity
 nx = 200   # Number of spatial points
 nt = 300   # Number of time steps
 noiseSigma = 0.05
-measurments, x, dt, F, C_init = Simulation(x_start, x_end, T_start, T_end, nx, nt, D, v, noiseSigma)
-prediction_x, x, dt, F, C_init = Simulation(x_start, x_end, T_start, T_end, nx, nt, D, v, 0.0)
+measurments, x, t, dt, dx, F, C_init = Simulation(x_start, x_end, T_start, T_end, nx, nt, D, v, noiseSigma)
+prediction_x, x, t,dt, dx , F, C_init = Simulation(x_start, x_end, T_start, T_end, nx, nt, D, v, 0.0)
 
 
 H = np.eye(nx + 1)  # Observation matrix (identity)
-Q = 0.001 * np.eye(nx + 1)  # Process noise covariance
-R = 0.05 * np.eye(nx + 1)  # Measurement noise covariance
-P = 0.001*np.eye(nx + 1)  # Initial error covariance
+Q = 1000 * np.eye(nx + 1)  # Process noise covariance
+R = 10 * np.eye(nx + 1)  # Measurement noise covariance
+P = 100.001*np.eye(nx + 1)  # Initial error covariance
 
 filter_state = np.zeros((nt, len(measurments[0])))
-adaptive_QR = False
+adaptive_QR = True
 
-alpha = 0.999
+alpha = 0.96
 
 for i in range(0, len(measurments)-1):
     z = measurments[i] 
@@ -155,11 +200,16 @@ for i in range(0, len(measurments)-1):
 
 
 idx = 150
-DrawSlice(measurments, idx)
-DrawSlice(filter_state, idx)
 
-#AnimateDraw(x, x_end, dt, measurments)
-AnimateDraw(x, x_end, dt, filter_state)
+#DrawSlice(measurments, idx, dt)
+#DrawSlice(filter_state, idx, dt)
+
+#DrawXSlice(filter_state, 10, dx, t)
+
+DrawError(prediction_x, measurments ,filter_state)
+
+# AnimateDraw(x, x_end, dt, measurments)
+# AnimateDraw(x, x_end, dt, filter_state)
 
 
 
