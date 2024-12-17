@@ -2,9 +2,143 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-L = 10.0      # Длина области [m] 
-T = 15.0       # Время моделирования [sec]
-Nx = 1600      # Число узлов по x [ ]
-Nt = 3200      # Число временных шагов [ ]
-D = 0.1      # Коэффициент диффузии [ ]
-v = 0.001       # Скорость адвекции [m/sec ]
+
+def Simulation(x_start, x_end, T_start, T_end, nx, nt, D, v, noiseSigma = 0.0):
+
+
+    # Parameters
+
+
+    # Derived parameters
+    dx = (x_end - x_start) / nx
+    dt = (T_end - T_start) / nt
+    a = D * dt / (2 * dx**2)
+    b = v * dt / (4 * dx)
+
+    # Spatial and time grids
+    x = np.linspace(x_start, x_end, nx + 1)
+    t = np.linspace(T_start, T_end, nt + 1)
+
+    # Initial and boundary conditions
+    C0 = 1.0  # Dirichlet condition at x = 0
+    C_init = np.zeros(nx + 1)  # Initial condition (e.g., zero everywhere)
+
+    # Matrices for Crank-Nicolson
+    A = np.zeros((nx + 1, nx + 1))
+    B = np.zeros((nx + 1, nx + 1))
+
+    # Fill matrices
+    for i in range(1, nx):
+        A[i, i - 1] = -(a - b)
+        A[i, i] = 1 + 2 * a
+        A[i, i + 1] = -(a + b)
+        B[i, i - 1] = a - b
+        B[i, i] = 1 - 2 * a
+        B[i, i + 1] = a + b
+
+    # Boundary conditions
+    A[0, 0] = 1  # Dirichlet at x = 0
+    A[-1, -2] = -1  # Neumann at x = L (gradient = 0)
+    A[-1, -1] = 1
+
+    B[0, 0] = 1
+    B[-1, -2] = 0
+    B[-1, -1] = 0
+
+    # Time stepping
+    C = C_init.copy()
+    C[0] = C0  # Apply Dirichlet condition
+    C_init[0] = C0
+    solution = [C.copy()]
+
+    for n in range(nt):
+        noise = np.random.normal(loc = 0.0, scale=noiseSigma, size = nx+1)
+        # Right-hand side
+        b = B @ C
+        b[0] = C0  # Dirichlet condition
+        b[-1] = 0  # Neumann condition
+
+        # Solve the linear system
+        C_new = np.linalg.solve(A, b)
+        C = C_new
+        solution.append(C.copy() + noise)
+
+    measurments = np.array(solution)
+    return measurments, x, dt, np.linalg.inv(A) @ B, C_init
+
+
+def AnimateDraw(x, x_end,dt,measurments):
+    # Анимация
+    fig, ax = plt.subplots()
+    line, = ax.plot(x, measurments[0], label="Численное решение")
+    ax.set_xlim(0, x_end)
+    ax.set_ylim(0, 1.1*measurments.max())
+    ax.set_xlabel("x")
+    ax.set_ylabel("u(x, t)")
+    ax.legend()
+    ax.grid()
+
+    def update(frame):
+        current_time = frame * dt
+        line.set_ydata(measurments[frame])
+        ax.set_title(f"Concentration at t = {current_time:.2f}")
+        return line,
+
+    ani = FuncAnimation(fig, update, frames=len(measurments), interval=50)
+    plt.show()
+
+
+
+x_start, x_end = 0, 10  # Spatial domain
+T_start, T_end = 0, 15  # Time domain
+D = 0.1  # Diffusion coefficient
+v = 0.1   # Velocity
+nx = 200   # Number of spatial points
+nt = 300   # Number of time steps
+noiseSigma = 0.05
+measurments, x, dt, F, C_init = Simulation(x_start, x_end, T_start, T_end, nx, nt, D, v, noiseSigma)
+
+
+H = np.eye(nx + 1)  # Observation matrix (identity)
+Q = 0.001 * np.eye(nx + 1)  # Process noise covariance
+R = 0.05 * np.eye(nx + 1)  # Measurement noise covariance
+P = 0.001*np.eye(nx + 1)  # Initial error covariance
+
+filter_state = np.zeros((nt, len(measurments[0])))
+
+
+alpha = 0.96
+x_k = C_init
+
+for i in range(0, len(measurments)-1):
+    z = measurments[i]
+
+    #predict
+    x_k = F @ x_k
+    P = F @ P @ F.T + Q
+
+    y = z - H @ x_k
+
+    PHT = P @ H.T
+    S = H @ PHT + R
+    SI = np.linalg.inv(S)
+
+    K = PHT @ SI
+    x_k = x_k + K @ y
+
+    I_KH = np.eye(nx + 1) - K @ H
+    P = I_KH @ P @ I_KH.T + K @ R @ K.T
+
+    filter_state[i] = x_k
+
+
+AnimateDraw(x, x_end, dt, measurments)
+AnimateDraw(x, x_end, dt, filter_state)
+
+# for el in np.linalg.inv(A):
+#     for e in el:
+#         print("{:5.2f} ".format(e), end = "")
+#     print()
+
+
+
