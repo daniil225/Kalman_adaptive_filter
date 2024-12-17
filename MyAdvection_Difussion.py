@@ -99,14 +99,14 @@ prediction_x, x, dt, F, C_init = Simulation(x_start, x_end, T_start, T_end, nx, 
 
 
 H = np.eye(nx + 1)  # Observation matrix (identity)
-Q = 0.1 * np.eye(nx + 1)  # Process noise covariance
-R = 0.1 * np.eye(nx + 1)  # Measurement noise covariance
-P = 0.001*np.eye(nx + 1)  # Initial error covariance
+Q = 100 * np.eye(nx + 1)  # Process noise covariance
+R = 3.05 * np.eye(nx + 1)  # Measurement noise covariance
+P = 3.001*np.eye(nx + 1)  # Initial error covariance
 
 filter_state = np.zeros((nt, len(measurments[0])))
-adaptive_QR = False
+adaptive_QR = True
 
-alpha = 0.96
+alpha = 0.99
 
 for i in range(0, len(measurments)-1):
     z = measurments[i] 
@@ -142,7 +142,7 @@ for i in range(0, len(measurments)-1):
     filter_state[i] = x_k
 
 
-AnimateDraw(x, x_end, dt, measurments)
+#AnimateDraw(x, x_end, dt, measurments)
 AnimateDraw(x, x_end, dt, filter_state)
 
 # for el in np.linalg.inv(A):
