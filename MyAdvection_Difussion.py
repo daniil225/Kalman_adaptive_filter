@@ -8,7 +8,7 @@ def Simulation(x_start, x_end, T_start, T_end, nx, nt, D, v, noiseSigma = 0.0):
     dx = (x_end - x_start) / nx
     dt = (T_end - T_start) / nt
     a = D * dt / (2 * dx**2)
-    b = v * dt / (4 * dx)
+    b = -v * dt / (4 * dx)
 
     # Spatial and time grids
     x = np.linspace(x_start, x_end, nx + 1)
@@ -101,7 +101,7 @@ def DrawSlice(data, idx):
 
 x_start, x_end = 0, 10  # Spatial domain
 T_start, T_end = 0, 20  # Time domain
-D = 0.1  # Diffusion coefficient
+D = 0.01  # Diffusion coefficient
 v = 0.5   # Velocity
 nx = 200   # Number of spatial points
 nt = 300   # Number of time steps
@@ -111,14 +111,14 @@ prediction_x, x, dt, F, C_init = Simulation(x_start, x_end, T_start, T_end, nx, 
 
 
 H = np.eye(nx + 1)  # Observation matrix (identity)
-Q = 100 * np.eye(nx + 1)  # Process noise covariance
-R = 3.05 * np.eye(nx + 1)  # Measurement noise covariance
+Q = 0.001 * np.eye(nx + 1)  # Process noise covariance
+R = 0.05 * np.eye(nx + 1)  # Measurement noise covariance
 P = 0.001*np.eye(nx + 1)  # Initial error covariance
 
 filter_state = np.zeros((nt, len(measurments[0])))
-adaptive_QR = True
+adaptive_QR = False
 
-alpha = 0.99
+alpha = 0.999
 
 for i in range(0, len(measurments)-1):
     z = measurments[i] 
@@ -159,7 +159,7 @@ DrawSlice(measurments, idx)
 DrawSlice(filter_state, idx)
 
 #AnimateDraw(x, x_end, dt, measurments)
-#AnimateDraw(x, x_end, dt, filter_state)
+AnimateDraw(x, x_end, dt, filter_state)
 
 
 
