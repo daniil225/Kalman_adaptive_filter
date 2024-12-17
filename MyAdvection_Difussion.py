@@ -89,7 +89,7 @@ def AnimateDraw(x, x_end,dt,measurments, gif_filename = "animation.gif"):
 
 x_start, x_end = 0, 10  # Spatial domain
 T_start, T_end = 0, 20  # Time domain
-D = 0.1  # Diffusion coefficient
+D = 0.01  # Diffusion coefficient
 v = 0.1   # Velocity
 nx = 200   # Number of spatial points
 nt = 300   # Number of time steps
@@ -99,9 +99,9 @@ prediction_x, x, dt, F, C_init = Simulation(x_start, x_end, T_start, T_end, nx, 
 
 
 H = np.eye(nx + 1)  # Observation matrix (identity)
-Q = 100 * np.eye(nx + 1)  # Process noise covariance
-R = 3.05 * np.eye(nx + 1)  # Measurement noise covariance
-P = 3.001*np.eye(nx + 1)  # Initial error covariance
+Q = 0.001 * np.eye(nx + 1)  # Process noise covariance
+R = 0.05 * np.eye(nx + 1)  # Measurement noise covariance
+P = 0.001*np.eye(nx + 1)  # Initial error covariance
 
 filter_state = np.zeros((nt, len(measurments[0])))
 adaptive_QR = True
